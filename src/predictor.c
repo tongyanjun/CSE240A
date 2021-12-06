@@ -11,9 +11,9 @@
 //
 // TODO:Student Information
 //
-const char *studentName = "NAME";
-const char *studentID   = "PID";
-const char *email       = "EMAIL";
+const char *studentName = "Yanjun Tong";
+const char *studentID   = "A59004168";
+const char *email       = "yj.sjtu@gmail.com";
 
 //------------------------------------//
 //      Predictor Configuration       //
@@ -36,7 +36,11 @@ int verbose;
 //
 //TODO: Add your own Branch Predictor data structures here
 //
+uint32_t pc_mask;
 
+uint32_t *global_bht;
+uint32_t global_bhr;
+uint32_t global_mask;
 
 //------------------------------------//
 //        Predictor Functions         //
@@ -50,6 +54,47 @@ init_predictor()
   //
   //TODO: Initialize Branch Predictor Data Structures
   //
+  // initialize pc mask
+  for(int i=0; i<pcIndexBits; i++) pc_mask |= (1 << i);
+
+  switch (bpType)
+  {
+  case GSHARE:
+    init_gshare();
+    break;
+  case TOURNAMENT:
+    init_tournament();
+    break;
+  case CUSTOM:
+    init_custom();
+    break;
+  
+  default:
+    break;
+  }
+}
+
+void
+init_gshare() {
+  int size = 1 << ghistoryBits;
+  global_bht = (uint32_t*) malloc(sizeof(uint32_t)*size);
+  // global history initialized with NOTTAKEN
+  global_bhr = 0;
+  for(int i=0; i<ghistoryBits; i++) global_mask |= (1 << i);
+  // initial bht with weakly not taken
+  for(int i=0; i<size; i++) {
+    global_bht[i] = WN;
+  }
+}
+
+void
+init_tournament() {
+
+}
+
+void
+init_custom() {
+
 }
 
 // Make a prediction for conditional branch instruction at PC 'pc'
@@ -68,13 +113,38 @@ make_prediction(uint32_t pc)
     case STATIC:
       return TAKEN;
     case GSHARE:
+      return gs_predict(pc);
     case TOURNAMENT:
+      return tournament_predict(pc);
     case CUSTOM:
+      return custom_predict(pc);
     default:
       break;
   }
 
   // If there is not a compatable bpType then return NOTTAKEN
+  return NOTTAKEN;
+}
+
+uint8_t
+gs_predict(uint32_t pc) {
+  // XOR the global history register with the lower bits (same length as the global history) of pc
+  uint32_t pcbits = pc & global_mask;
+  uint32_t bhr = global_bhr & global_mask;
+  uint32_t index = pcbits ^ bhr;
+  uint8_t predict = global_bht[index];
+  
+  if (predict < WT) return NOTTAKEN;
+  return TAKEN;
+}
+
+uint8_t
+tournament_predict(uint32_t pc) {
+  return NOTTAKEN;
+}
+
+uint8_t
+custom_predict(uint32_t pc) {
   return NOTTAKEN;
 }
 
