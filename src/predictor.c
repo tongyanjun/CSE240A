@@ -151,8 +151,9 @@ void
 init_custom() {
   // give initial value for args
   ghistoryBits = 13;
-  pcIndexBits = 11;
   lhistoryBits = 11;
+  pcIndexBits = 11;
+  
   // the rest inital process will follow the same pattern as tournament
   init_tournament();
 }
@@ -192,7 +193,7 @@ gs_predict(uint32_t pc) {
   uint32_t pcbits = pc & global_mask;
   uint32_t bhr = global_bhr & global_mask;
   uint32_t index = pcbits ^ bhr;
-  uint8_t predict = global_bht[index];
+  uint32_t predict = global_bht[index];
 
   if (predict < WT) return NOTTAKEN;
   return TAKEN;
@@ -277,7 +278,7 @@ void
 train_global_local(uint32_t pc, uint8_t outcome, uint32_t global_index) {
   uint32_t pcbits = pc & pc_mask;
   uint32_t local_bhr = local_bhrs[pcbits] & local_mask;
-  uint8_t local_predict = local_bht[local_bhr]<WT?NOTTAKEN:TAKEN;
+  uint32_t local_predict = local_bht[local_bhr]<WT?NOTTAKEN:TAKEN;
   // update local bht
   if(outcome == TAKEN) {
     if(local_bht[local_bhr] < ST) local_bht[local_bhr]++;
@@ -285,7 +286,7 @@ train_global_local(uint32_t pc, uint8_t outcome, uint32_t global_index) {
     if(local_bht[local_bhr] > SN) local_bht[local_bhr]--;
   }
   
-  uint8_t global_predict = global_bht[global_index]<WT?NOTTAKEN:TAKEN;
+  uint32_t global_predict = global_bht[global_index]<WT?NOTTAKEN:TAKEN;
   // update global bht
   if(outcome == TAKEN) {
     if(global_bht[global_index] < ST) global_bht[global_index]++;
