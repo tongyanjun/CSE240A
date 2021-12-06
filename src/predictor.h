@@ -72,6 +72,7 @@ uint8_t make_prediction(uint32_t pc);
 uint8_t gs_predict(uint32_t pc);
 uint8_t tournament_predict(uint32_t pc);
 uint8_t custom_predict(uint32_t pc);
+uint8_t global_local_predict(uint32_t pc, uint32_t global_index);
 
 // Train the predictor the last executed branch at PC 'pc' and with
 // outcome 'outcome' (true indicates that the branch was taken, false
@@ -81,6 +82,7 @@ void train_predictor(uint32_t pc, uint8_t outcome);
 void train_gs(uint32_t pc, uint8_t outcome);
 void train_tournament(uint32_t pc, uint8_t outcome);
 void train_custom(uint32_t pc, uint8_t outcome);
+void train_global_local(uint32_t pc, uint8_t outcome, uint32_t global_index);
 
 // Cleanup
 void free_predictor();
