@@ -42,10 +42,32 @@ uint32_t *global_bht;
 uint32_t global_bhr;
 uint32_t global_mask;
 
+uint32_t *choice_bht;
+uint32_t *local_bhrs;
+uint32_t *local_bht;
+uint32_t local_mask;
+
 //------------------------------------//
 //        Predictor Functions         //
 //------------------------------------//
-
+// Free the predictor
+void 
+free_predictor() {
+  switch (bpType) {
+    case GSHARE:
+      free(global_bht);
+      break;
+    case TOURNAMENT:
+      free(global_bht);
+      free(choice_bht);
+      free(local_bhrs);
+      free(local_bht);
+      break;
+    case CUSTOM:
+    default:
+      break;
+  }
+}
 // Initialize the predictor
 //
 void
@@ -89,7 +111,34 @@ init_gshare() {
 
 void
 init_tournament() {
-
+  // global history initialized with NOTTAKEN
+  printf("enter init");
+  global_bhr = 0;
+  for(int i=0; i<ghistoryBits; i++) global_mask |= (1 << i);
+  // global_bht
+  int size = 1 << ghistoryBits;
+  global_bht = (uint32_t*) malloc(sizeof(uint32_t)*size);
+  for(int i=0; i<size; i++) {
+    global_bht[i] = WN;
+  }
+  // choice_bht, initialized to Weakly select the Global Predictor
+  choice_bht = (uint32_t*) malloc(sizeof(uint32_t)*size);
+  for(int i=0; i<size; i++) {
+    choice_bht[i] = WG;
+  }
+  // local bhrs
+  size = 1 << pcIndexBits;
+  local_bhrs = (uint32_t*) malloc(sizeof(uint32_t)*size);
+  for(int i=0; i<size; i++) {
+    local_bhrs = 0;
+  }
+  for(int i=0; i<lhistoryBits; i++) local_mask |= (1 << i);
+  // local bht
+  size = 1 << lhistoryBits;
+  local_bht = (uint32_t*) malloc(sizeof(uint32_t)*size);
+  for(int i=0; i<size; i++) {
+    local_bht[i] = WN;
+  }
 }
 
 void
@@ -140,7 +189,16 @@ gs_predict(uint32_t pc) {
 
 uint8_t
 tournament_predict(uint32_t pc) {
-  return NOTTAKEN;
+  global_bhr &= global_mask;
+  if(choice_bht[global_bhr] < WG) {
+    uint32_t pcbits = pc & pc_mask;
+    uint32_t local_bhr = local_bhrs[pcbits] & local_mask;
+    if(local_bht[local_bhr] < WT) return NOTTAKEN;
+    return TAKEN;
+  } else {
+    if(global_bht[global_bhr] < WT) return NOTTAKEN;
+    return TAKEN;
+  }
 }
 
 uint8_t
@@ -184,12 +242,42 @@ train_gs(uint32_t pc, uint8_t outcome) {
     if(global_bht[index] > SN) global_bht[index]--;
   }
   // update global branch history register
-  global_bhr = (global_bhr << 1) | outcome;
+  global_bhr = ((global_bhr << 1) | outcome) & global_mask;
 }
 
 void
 train_tournament(uint32_t pc, uint8_t outcome) {
+  uint32_t pcbits = pc & pc_mask;
+  uint32_t local_bhr = local_bhrs[pcbits] & local_mask;
+  uint8_t local_predict = local_bht[local_bhr]<WT?NOTTAKEN:TAKEN;
+  // update local bht
+  if(outcome == TAKEN) {
+    if(local_bht[local_bhr] < ST) local_bht[local_bhr]++;
+  } else {
+    if(local_bht[local_bhr] > SN) local_bht[local_bhr]--;
+  }
   
+  global_bhr &= global_mask;
+  uint8_t global_predict = global_bht[global_bhr]<WT?NOTTAKEN:TAKEN;
+  // update global bht
+  if(outcome == TAKEN) {
+    if(global_bht[global_bhr] < ST) global_bht[global_bhr]++;
+  } else {
+    if(global_bht[global_bhr] > SN) global_bht[global_bhr]--;
+  }
+
+  // update choice bht
+  if(local_predict == outcome && global_predict != outcome && choice_bht[global_bhr] > SL) {
+    choice_bht[global_bhr]--;
+  } else if(local_predict != outcome && global_predict == outcome && choice_bht[global_bhr] < SG) {
+    choice_bht[global_bhr]++;
+  }
+
+  // update local bhr
+  local_bhrs[pcbits] = ((local_bhrs[pcbits] << 1) | outcome) & local_mask;
+  // update global bhr
+  global_bhr = ((global_bhr << 1) | outcome) & global_mask;
+
 }
 
 void

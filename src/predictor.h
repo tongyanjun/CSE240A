@@ -38,6 +38,12 @@ extern const char *bpName[];
 #define WT  2			// predict T, weak taken
 #define ST  3			// predict T, strong taken
 
+// Definitions for choice counters
+#define SL  0           // strong choose global predictor
+#define WL  1           // weak choose global predictor
+#define WG  2           // weak choose local predictor
+#define SG  3           // strong choose local predictor
+
 //------------------------------------//
 //      Predictor Configuration       //
 //------------------------------------//
@@ -75,5 +81,8 @@ void train_predictor(uint32_t pc, uint8_t outcome);
 void train_gs(uint32_t pc, uint8_t outcome);
 void train_tournament(uint32_t pc, uint8_t outcome);
 void train_custom(uint32_t pc, uint8_t outcome);
+
+// Cleanup
+void free_predictor();
 
 #endif
