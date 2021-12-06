@@ -133,7 +133,7 @@ gs_predict(uint32_t pc) {
   uint32_t bhr = global_bhr & global_mask;
   uint32_t index = pcbits ^ bhr;
   uint8_t predict = global_bht[index];
-  
+
   if (predict < WT) return NOTTAKEN;
   return TAKEN;
 }
@@ -158,4 +158,41 @@ train_predictor(uint32_t pc, uint8_t outcome)
   //
   //TODO: Implement Predictor training
   //
+  switch (bpType) {
+    case GSHARE:
+      train_gs(pc, outcome);
+      break;
+    case TOURNAMENT:
+      train_tournament(pc, outcome);
+      break;
+    case CUSTOM:
+      train_custom(pc, outcome);
+      break;
+    default:
+      break;
+  }
+}
+
+void
+train_gs(uint32_t pc, uint8_t outcome) {
+  uint32_t pcbits = pc & global_mask;
+  uint32_t bhr = global_bhr & global_mask;
+  uint32_t index = pcbits ^ bhr;
+  if(outcome == TAKEN) {
+    if(global_bht[index] < ST) global_bht[index]++;
+  } else {
+    if(global_bht[index] > SN) global_bht[index]--;
+  }
+  // update global branch history register
+  global_bhr = (global_bhr << 1) | outcome;
+}
+
+void
+train_tournament(uint32_t pc, uint8_t outcome) {
+  
+}
+
+void
+train_custom(uint32_t pc, uint8_t outcome) {
+  
 }
