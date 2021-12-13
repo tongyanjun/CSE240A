@@ -91,7 +91,7 @@ init_predictor()
     init_gshare();
     break;
   case TOURNAMENT:
-    init_tournament();
+    init_tournament(WN);
     break;
   case CUSTOM:
     init_custom();
@@ -116,7 +116,7 @@ init_gshare() {
 }
 
 void
-init_tournament() {
+init_tournament(uint32_t local_wn) {
   // global history initialized with NOTTAKEN
   // printf("enter init");
   global_bhr = 0;
@@ -143,7 +143,7 @@ init_tournament() {
   size = 1 << lhistoryBits;
   local_bht = (uint32_t*) malloc(sizeof(uint32_t)*size);
   for(int i=0; i<size; i++) {
-    local_bht[i] = WN;
+    local_bht[i] = local_wn;
   }
 }
 
@@ -155,7 +155,7 @@ init_custom() {
   pcIndexBits = 11;
   
   // the rest inital process will follow the same pattern as tournament
-  init_tournament();
+  init_tournament(WWN);
 }
 
 // Make a prediction for conditional branch instruction at PC 'pc'
@@ -201,22 +201,22 @@ gs_predict(uint32_t pc) {
 
 uint8_t
 tournament_predict(uint32_t pc) {
-  return global_local_predict(pc, global_bhr & global_mask);
+  return global_local_predict(pc, global_bhr & global_mask, WT);
 }
 
 uint8_t
 custom_predict(uint32_t pc) {
   // cooperate with GSHARE XOR
   uint32_t index = (pc & global_mask) ^ (global_bhr & global_mask);
-  return global_local_predict(pc, index);
+  return global_local_predict(pc, index, WWT);
 }
 
 uint8_t
-global_local_predict(uint32_t pc, uint32_t global_index) {
+global_local_predict(uint32_t pc, uint32_t global_index, uint32_t local_wt) {
   if(choice_bht[global_index] < WG) {
     uint32_t pcbits = pc & pc_mask;
     uint32_t local_bhr = local_bhrs[pcbits] & local_mask;
-    if(local_bht[local_bhr] < WT) return NOTTAKEN;
+    if(local_bht[local_bhr] < local_wt) return NOTTAKEN;
     return TAKEN;
   } else {
     if(global_bht[global_index] < WT) return NOTTAKEN;
@@ -265,25 +265,25 @@ train_gs(uint32_t pc, uint8_t outcome) {
 
 void
 train_tournament(uint32_t pc, uint8_t outcome) {
-  train_global_local(pc, outcome, global_bhr & global_mask);
+  train_global_local(pc, outcome, global_bhr & global_mask, ST, SN);
 }
 
 void
 train_custom(uint32_t pc, uint8_t outcome) {
   uint32_t index = (pc & global_mask) ^ (global_bhr & global_mask);
-  train_global_local(pc, outcome, index);
+  train_global_local(pc, outcome, index, SST, SSN);
 }
 
 void
-train_global_local(uint32_t pc, uint8_t outcome, uint32_t global_index) {
+train_global_local(uint32_t pc, uint8_t outcome, uint32_t global_index, uint32_t local_st, uint32_t local_sn) {
   uint32_t pcbits = pc & pc_mask;
   uint32_t local_bhr = local_bhrs[pcbits] & local_mask;
   uint32_t local_predict = local_bht[local_bhr]<WT?NOTTAKEN:TAKEN;
   // update local bht
   if(outcome == TAKEN) {
-    if(local_bht[local_bhr] < ST) local_bht[local_bhr]++;
+    if(local_bht[local_bhr] < local_st) local_bht[local_bhr]++;
   } else {
-    if(local_bht[local_bhr] > SN) local_bht[local_bhr]--;
+    if(local_bht[local_bhr] > local_sn) local_bht[local_bhr]--;
   }
   
   uint32_t global_predict = global_bht[global_index]<WT?NOTTAKEN:TAKEN;

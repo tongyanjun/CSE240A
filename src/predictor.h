@@ -38,6 +38,16 @@ extern const char *bpName[];
 #define WT  2			// predict T, weak taken
 #define ST  3			// predict T, strong taken
 
+// Definitions for 3-bit counters
+#define SSN  0			// predict NT, strong strong not taken
+#define MSN  1			// predict NT, medium strong not taken
+#define MWN  2          // predict NT, medium weak not taken
+#define WWN  3          // predict NT, weak weak not taken
+#define WWT  4			// predict T, weak weak taken
+#define MWT  5          // predict T, medium weak taken
+#define MST	 6          // predict T, medium strong taken
+#define SST  7          // predict T, strong strong taken
+
 // Definitions for choice counters
 #define SL  0           // strong choose global predictor
 #define WL  1           // weak choose global predictor
@@ -61,7 +71,7 @@ extern int verbose;
 //
 void init_predictor();
 void init_gshare();
-void init_tournament();
+void init_tournament(uint32_t local_wn);
 void init_custom();
 
 // Make a prediction for conditional branch instruction at PC 'pc'
@@ -72,7 +82,7 @@ uint8_t make_prediction(uint32_t pc);
 uint8_t gs_predict(uint32_t pc);
 uint8_t tournament_predict(uint32_t pc);
 uint8_t custom_predict(uint32_t pc);
-uint8_t global_local_predict(uint32_t pc, uint32_t global_index);
+uint8_t global_local_predict(uint32_t pc, uint32_t global_index, uint32_t local_wt);
 
 // Train the predictor the last executed branch at PC 'pc' and with
 // outcome 'outcome' (true indicates that the branch was taken, false
@@ -82,7 +92,7 @@ void train_predictor(uint32_t pc, uint8_t outcome);
 void train_gs(uint32_t pc, uint8_t outcome);
 void train_tournament(uint32_t pc, uint8_t outcome);
 void train_custom(uint32_t pc, uint8_t outcome);
-void train_global_local(uint32_t pc, uint8_t outcome, uint32_t global_index);
+void train_global_local(uint32_t pc, uint8_t outcome, uint32_t global_index, uint32_t local_st, uint32_t local_sn);
 
 // Cleanup
 void free_predictor();
