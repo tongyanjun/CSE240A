@@ -82,8 +82,6 @@ init_predictor()
   //
   //TODO: Initialize Branch Predictor Data Structures
   //
-  // initialize pc mask
-  for(int i=0; i<pcIndexBits; i++) pc_mask |= (1 << i);
 
   switch (bpType)
   {
@@ -113,6 +111,8 @@ init_gshare() {
   for(int i=0; i<size; i++) {
     global_bht[i] = WN;
   }
+  // initialize pc mask
+  for(int i=0; i<pcIndexBits; i++) pc_mask |= (1 << i);
 }
 
 void
@@ -145,6 +145,8 @@ init_tournament(uint32_t local_wn) {
   for(int i=0; i<size; i++) {
     local_bht[i] = local_wn;
   }
+  // initialize pc mask
+  for(int i=0; i<pcIndexBits; i++) pc_mask |= (1 << i);
 }
 
 void
@@ -265,20 +267,20 @@ train_gs(uint32_t pc, uint8_t outcome) {
 
 void
 train_tournament(uint32_t pc, uint8_t outcome) {
-  train_global_local(pc, outcome, global_bhr & global_mask, ST, SN);
+  train_global_local(pc, outcome, global_bhr & global_mask, ST, SN, WT);
 }
 
 void
 train_custom(uint32_t pc, uint8_t outcome) {
   uint32_t index = (pc & global_mask) ^ (global_bhr & global_mask);
-  train_global_local(pc, outcome, index, SST, SSN);
+  train_global_local(pc, outcome, index, SST, SSN, WWT);
 }
 
 void
-train_global_local(uint32_t pc, uint8_t outcome, uint32_t global_index, uint32_t local_st, uint32_t local_sn) {
+train_global_local(uint32_t pc, uint8_t outcome, uint32_t global_index, uint32_t local_st, uint32_t local_sn, uint32_t local_wt) {
   uint32_t pcbits = pc & pc_mask;
   uint32_t local_bhr = local_bhrs[pcbits] & local_mask;
-  uint32_t local_predict = local_bht[local_bhr]<WT?NOTTAKEN:TAKEN;
+  uint32_t local_predict = local_bht[local_bhr]<local_wt?NOTTAKEN:TAKEN;
   // update local bht
   if(outcome == TAKEN) {
     if(local_bht[local_bhr] < local_st) local_bht[local_bhr]++;

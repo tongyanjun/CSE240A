@@ -92,7 +92,7 @@ void train_predictor(uint32_t pc, uint8_t outcome);
 void train_gs(uint32_t pc, uint8_t outcome);
 void train_tournament(uint32_t pc, uint8_t outcome);
 void train_custom(uint32_t pc, uint8_t outcome);
-void train_global_local(uint32_t pc, uint8_t outcome, uint32_t global_index, uint32_t local_st, uint32_t local_sn);
+void train_global_local(uint32_t pc, uint8_t outcome, uint32_t global_index, uint32_t local_st, uint32_t local_sn, uint32_t local_wt);
 
 // Cleanup
 void free_predictor();
